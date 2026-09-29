@@ -28,6 +28,18 @@ urlpatterns = [
     ),
 
     path(
+        "add/employees/",
+        EmployeeListAPIView.as_view(),
+        name="employee-import",
+    ),
+    
+    path(
+        "update/employee/<str:employee_id>/",
+        EmployeeListAPIView.as_view(),
+        name="employee-import",
+    ),
+
+    path(
         "employees/import/",
         EmployeeImportAPIView.as_view(),
         name="employee-import",

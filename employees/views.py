@@ -1,4 +1,5 @@
 from datetime import datetime
+from functools import wraps
 
 from django.db import transaction
 from django.utils import timezone
@@ -15,6 +16,7 @@ from .serializers import (
 )
 
 from django.shortcuts import get_object_or_404
+from rest_framework.exceptions import ValidationError
 
 from .services.excel_service import (
     validate_excel_file,
@@ -22,6 +24,45 @@ from .services.excel_service import (
     format_excel_time,
     calculate_working_hours,
 )
+
+
+def admin_required(view_func):
+
+    @wraps(view_func)
+    def wrapper(self, request, *args, **kwargs):
+
+        employee_id = request.user.get("employee_id")
+
+        if not employee_id:
+            return Response(
+                {"error": "Authentication required"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        try:
+            employee = Employee.objects.get(
+                employee_id=employee_id
+            )
+        except Employee.DoesNotExist:
+            return Response(
+                {"error": "Employee not found"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        if employee.role.lower() != "admin":
+            return Response(
+                {"error": "Admin access required"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return view_func(
+            self,
+            request,
+            *args,
+            **kwargs
+        )
+
+    return wrapper
 
 
 class EmployeeByIdView(APIView):
@@ -55,6 +96,39 @@ class EmployeeListAPIView(APIView):
             "count": employees.count(),
             "data": serializer.data,
         })
+
+    def post(self,request):
+
+        serializer = EmployeeSerializer(
+            data = request.data
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+
+            return Response(serializer.data,status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self,request,employee_id):
+
+        try:
+            employee = Employee.objects.get(employee_id=employee_id)
+        except Employee.DoesNotExist:
+            return Response({"details":"Employee does not exist"},status=status.HTTP_404_NOT_FOUND)
+
+        serializer = EmployeeSerializer(
+            employee,
+            data=request.data,
+            partial = True
+        )  
+
+        if serializer.is_valid():
+            serializer.save()
+
+            return Response(serializer.data,status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 
 class EmployeeImportAPIView(APIView):

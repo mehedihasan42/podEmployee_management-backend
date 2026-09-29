@@ -14,6 +14,7 @@ class Employee(models.Model):
     designation = models.CharField(max_length=255)
     profile_pic = models.URLField(blank=True,null=True)
     address = models.CharField(max_length=200,blank=True,null=True)
+    password = models.CharField(max_length=200,blank=True,null=True)
 
     email = models.EmailField(
         max_length=255,

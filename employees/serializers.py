@@ -2,14 +2,31 @@ from rest_framework import serializers
 
 from .models import Employee, Attendance
 from datetime import time
+from django.contrib.auth.hashers import make_password
 
+
+from django.contrib.auth.hashers import make_password
+from rest_framework import serializers
 
 class EmployeeSerializer(serializers.ModelSerializer):
+
+    confirmPassword = serializers.CharField(
+        write_only=True,
+        required=True
+    )
+
+    password = serializers.CharField(
+        write_only=True,
+        required=True
+    )
+
     class Meta:
         model = Employee
         fields = [
             "id",
             "employee_id",
+            "password",
+            "confirmPassword",
             "name",
             "department",
             "designation",
@@ -23,6 +40,27 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def validate(self, attrs):
+        password = attrs.get("password")
+        confirmPassword = attrs.get("confirmPassword")
+
+        if password != confirmPassword:
+            raise serializers.ValidationError({
+                "confirmPassword": "Password and confirm password do not match."
+            })
+
+        return attrs
+
+    def create(self, validated_data):
+        # Remove confirmPassword because it is not a database field
+        validated_data.pop("confirmPassword")
+
+        # Hash the password before storing it
+        validated_data["password"] = make_password(
+            validated_data["password"]
+        )
+
+        return Employee.objects.create(**validated_data)
 
 class AttendanceSerializer(serializers.ModelSerializer):
 
