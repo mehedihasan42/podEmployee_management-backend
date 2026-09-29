@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-ejcd3am&@yj59%f(%zaib(3owioo6m)@il2c8inbew03p-7u*d
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "https://podemployee-management-backend.onrender.com"
+    "podemployee-management-backend.onrender.com"
 ]
 
 CORS_ALLOWED_ORIGINS = [
