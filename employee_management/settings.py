@@ -26,14 +26,18 @@ SECRET_KEY = 'django-insecure-ejcd3am&@yj59%f(%zaib(3owioo6m)@il2c8inbew03p-7u*d
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "https://podemployee-management-backend.onrender.com"
+]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "https://employee-management-pd.netlify.app"
 ]
 
-
+CSRF_TRUSTED_ORIGINS = [
+    "https://employee-management-pd.netlify.app",
+]
 
 # Application definition
 
