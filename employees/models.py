@@ -15,6 +15,8 @@ class Employee(models.Model):
     profile_pic = models.URLField(blank=True,null=True)
     address = models.CharField(max_length=200,blank=True,null=True)
     password = models.CharField(max_length=200,blank=True,null=True)
+    role = models.CharField(max_length=100,blank=True,null=True)
+    is_active = models.BooleanField(default=True)
 
     email = models.EmailField(
         max_length=255,
@@ -99,6 +101,3 @@ class Attendance(models.Model):
             f"{self.employee.employee_id} - "
             f"{self.attendance_date}"
         )
-
-
-    

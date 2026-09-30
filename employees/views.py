@@ -8,6 +8,9 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.contrib.auth.hashers import check_password
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
 
 from .models import Employee, Attendance
 from .serializers import (
@@ -882,4 +885,108 @@ class EmployeeYearlyAttendanceView(APIView):
                 },
             },
             status=status.HTTP_200_OK
-        )        
+        )    
+
+
+class EmployeeLoginAPIView(APIView):
+
+    def post(self, request):
+
+        employee_id = request.data.get("employee_id")
+        password = request.data.get("password")
+
+        # Check input
+        if not employee_id or not password:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Employee ID and password are required."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Find employee
+        try:
+            employee = Employee.objects.get(employee_id=employee_id)
+        except Employee.DoesNotExist:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Invalid employee ID or password."
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # Check password exists
+        if not employee.password:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Password is not set for this employee."
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # Check password
+        if not check_password(password, employee.password):
+            return Response(
+                {
+                    "success": False,
+                    "message": "Invalid employee ID or password."
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # Create JWT
+        refresh = RefreshToken()
+
+        # Add custom claims
+        refresh["employee_id"] = employee.employee_id
+        refresh["employee_db_id"] = employee.id
+        refresh["name"] = employee.name
+
+        access_token = refresh.access_token
+
+        # Add custom claims to access token
+        access_token["employee_id"] = employee.employee_id
+        access_token["employee_db_id"] = employee.id
+        access_token["name"] = employee.name
+
+        return Response(
+            {
+                "success": True,
+                "message": "Login successful.",
+
+                "tokens": {
+                    "access": str(access_token),
+                    "refresh": str(refresh),
+                },
+
+                "data": {
+                    "id": employee.id,
+                    "employee_id": employee.employee_id,
+                    "name": employee.name,
+                    "department": employee.department,
+                    "designation": employee.designation,
+                    "email": employee.email,
+                }
+            },
+            status=status.HTTP_200_OK
+        )
+
+class CurrentEmployeeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        employee = request.user
+
+        return Response({
+            "success": True,
+            "user": {
+                "employee_id": employee.employee_id,
+                "name": employee.name,
+                "role": employee.role,
+                "department": employee.department,
+                "designation": employee.designation,
+            }
+        })    

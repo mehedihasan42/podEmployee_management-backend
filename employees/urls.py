@@ -9,7 +9,9 @@ from .views import (
     AttendanceListAemployee,
     EmployeeByIdView,
     EmployeeMonthlyAttendanceView,
-    EmployeeYearlyAttendanceView
+    EmployeeYearlyAttendanceView,
+    EmployeeLoginAPIView,
+    CurrentEmployeeAPIView
 )
 
 
@@ -79,5 +81,15 @@ urlpatterns = [
         "attendance/yearly/<str:employee_id>/",
         EmployeeYearlyAttendanceView.as_view(),
         name="employee-yearly-attendance"
+    ),
+
+     path(
+        "login/", 
+        EmployeeLoginAPIView.as_view(), 
+        name="employee-login"
+    ),
+     path(
+        "me/", 
+        CurrentEmployeeAPIView.as_view()
     ),
 ]
