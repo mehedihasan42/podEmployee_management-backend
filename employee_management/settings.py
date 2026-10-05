@@ -69,9 +69,9 @@ MIDDLEWARE = [
 ]
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
+    "DEFAULT_AUTHENTICATION_CLASSES": (
         "employees.authentication.EmployeeJWTAuthentication",
-    ],
+    ),
 }
 
 SIMPLE_JWT = {
