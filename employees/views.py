@@ -10,7 +10,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,AllowAny
+from rest_framework.generics import UpdateAPIView
 
 from .models import Employee, Attendance
 from .serializers import (
@@ -129,10 +130,84 @@ class EmployeeListAPIView(APIView):
         if serializer.is_valid():
             serializer.save()
 
-            return Response(serializer.data,status=status.HTTP_201_CREATED)
+            return Response(serializer.data,status=status.HTTP_200_OK)
 
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
+    def delete(self,request,employee_id):
+
+        try:
+            employee = Employee.objects.get(employee_id=employee_id)
+        except Employee.DoesNotExist:
+            return Response({"details":"Employee does not exist"},status=status.HTTP_404_NOT_FOUND)
+
+        employee.delete()
+        return Response({"data":"Employee deleted"},status=status.HTTP_204_NO_CONTENT)
+
+class UpdateUserRole(UpdateAPIView):    
+
+    def patch(self,request,employee_id):
+        try:
+            employee = Employee.objects.get(employee_id=employee_id)
+        except Employee.DoesNotExist:
+            return Response({"details":"Employee does not exist"},status=status.HTTP_404_NOT_FOUND)
+
+        role = request.data.get('role')
+
+        if role not in ["User", "Admin"]:
+            return Response(
+                {"error": "Invalid role"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        employee.role = role
+        employee.save(update_fields=['role'])
+
+        return Response({'data':'Updated Successfully'},status=status.HTTP_200_OK)
+
+
+class EmployeePasswordUpdateView(UpdateAPIView):
+    queryset = Employee.objects.all()
+    serializer_class = EmployeeSerializer
+    lookup_field = "employee_id"
+    permission_classes = [IsAuthenticated]
+
+    def update(self, request, *args, **kwargs):
+        employee = self.get_object()
+
+        password = request.data.get("password")
+        confirm_password = request.data.get("confirmPassword")
+
+        if not password:
+            return Response(
+                {"password": "Password is required."},
+                status=400
+            )
+
+        if password != confirm_password:
+            return Response(
+                {"confirmPassword": "Passwords do not match."},
+                status=400
+            )
+
+        # Only pass password fields to serializer
+        serializer = self.get_serializer(
+            employee,
+            data={
+                "password": password,
+                "confirmPassword": confirm_password
+            },
+            partial=True
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            {"message": "Password updated successfully."},
+            status=200
+        )
+    
 
 class EmployeeImportAPIView(APIView):
     parser_classes = [
@@ -639,6 +714,58 @@ class AttendanceListAPIView(APIView):
             "data": serializer.data,
         })
 
+    def delete(self, request):
+        date_string = request.query_params.get("date")
+
+        if not date_string:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Date is required.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            attendance_date = datetime.strptime(
+                date_string,
+                "%Y-%m-%d"
+            ).date()
+
+        except ValueError:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Date must be YYYY-MM-DD",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        queryset = Attendance.objects.filter(
+            attendance_date=attendance_date
+        )
+
+        deleted_count = queryset.count()
+
+        if deleted_count == 0:
+            return Response(
+                {
+                    "success": False,
+                    "message": "No attendance data found for this date.",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        queryset.delete()
+
+        return Response(
+            {
+                "success": True,
+                "message": f"{deleted_count} attendance record(s) deleted successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )
+
 
 class AttendanceListAemployee(APIView):
 
@@ -890,12 +1017,13 @@ class EmployeeYearlyAttendanceView(APIView):
 
 class EmployeeLoginAPIView(APIView):
 
+    permission_classes = [AllowAny]
+
     def post(self, request):
 
         employee_id = request.data.get("employee_id")
         password = request.data.get("password")
 
-        # Check input
         if not employee_id or not password:
             return Response(
                 {
@@ -905,9 +1033,10 @@ class EmployeeLoginAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Find employee
         try:
-            employee = Employee.objects.get(employee_id=employee_id)
+            employee = Employee.objects.get(
+                employee_id=employee_id
+            )
         except Employee.DoesNotExist:
             return Response(
                 {
@@ -917,7 +1046,15 @@ class EmployeeLoginAPIView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        # Check password exists
+        if not employee.is_active:
+            return Response(
+                {
+                    "success": False,
+                    "message": "This employee account is inactive."
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
         if not employee.password:
             return Response(
                 {
@@ -927,7 +1064,6 @@ class EmployeeLoginAPIView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        # Check password
         if not check_password(password, employee.password):
             return Response(
                 {
@@ -937,17 +1073,14 @@ class EmployeeLoginAPIView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        # Create JWT
         refresh = RefreshToken()
 
-        # Add custom claims
         refresh["employee_id"] = employee.employee_id
         refresh["employee_db_id"] = employee.id
         refresh["name"] = employee.name
 
         access_token = refresh.access_token
 
-        # Add custom claims to access token
         access_token["employee_id"] = employee.employee_id
         access_token["employee_db_id"] = employee.id
         access_token["name"] = employee.name
@@ -969,24 +1102,33 @@ class EmployeeLoginAPIView(APIView):
                     "department": employee.department,
                     "designation": employee.designation,
                     "email": employee.email,
+                    "role": employee.role,
                 }
             },
             status=status.HTTP_200_OK
         )
+    
 
 class CurrentEmployeeAPIView(APIView):
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+
         employee = request.user
 
         return Response({
             "success": True,
             "user": {
+                "id": employee.id,
+                "profile_pic": employee.profile_pic,
                 "employee_id": employee.employee_id,
                 "name": employee.name,
                 "role": employee.role,
                 "department": employee.department,
                 "designation": employee.designation,
+                "email": employee.email,
+                "phone": employee.phone,
+                "address": employee.address,
             }
-        })    
+        })   

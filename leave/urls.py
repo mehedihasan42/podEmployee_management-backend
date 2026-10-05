@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import LeaveRequestAPIView,LeaveRequestDetailAPIView,LeaveRequestByIDApiVIew
+from .views import LeaveRequestAPIView,LeaveRequestDetailAPIView,LeaveRequestByIDApiVIew,LeaveRequestTosubstitute
 
 urlpatterns = [
     path(
@@ -21,8 +21,13 @@ urlpatterns = [
     ),
 
     path(
-            "leave_by_id/<int:pk>/",
-            LeaveRequestByIDApiVIew.as_view(),
-            name="leave-request-update"
+        "leave_by_id/<int:pk>/",
+        LeaveRequestByIDApiVIew.as_view(),
+        name="leave-request-update"
         ),
+
+    path(
+        "substitute/<str:employee_id>/",
+        LeaveRequestTosubstitute.as_view(),
+),    
 ]

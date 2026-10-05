@@ -11,22 +11,24 @@ from .views import (
     EmployeeMonthlyAttendanceView,
     EmployeeYearlyAttendanceView,
     EmployeeLoginAPIView,
-    CurrentEmployeeAPIView
+    CurrentEmployeeAPIView,
+    EmployeePasswordUpdateView,
+    UpdateUserRole
 )
 
 
 urlpatterns = [
 
     path(
-        "employee/<str:employee_id>/",
-        EmployeeByIdView.as_view(),
-        name="employeeByID",
-    ),
-
-    path(
         "employees/",
         EmployeeListAPIView.as_view(),
         name="employee-list",
+        ),
+
+    path(
+        "employee/<str:employee_id>/",
+        EmployeeByIdView.as_view(),
+        name="employeeByID",
     ),
 
     path(
@@ -42,9 +44,27 @@ urlpatterns = [
     ),
 
     path(
+        "delete/employee/<str:employee_id>/",
+        EmployeeListAPIView.as_view(),
+        name="employee-import",
+        ),
+
+    path(
         "employees/import/",
         EmployeeImportAPIView.as_view(),
         name="employee-import",
+    ),
+
+    path(
+        "update/employee-password/<str:employee_id>/",
+        EmployeePasswordUpdateView.as_view(),
+        name="update-employee-password"
+    ), 
+    
+    path(
+        "update/user_role/<str:employee_id>/",
+        UpdateUserRole.as_view(),
+        name="update-employee-password"
     ),
 
     path(
@@ -88,6 +108,7 @@ urlpatterns = [
         EmployeeLoginAPIView.as_view(), 
         name="employee-login"
     ),
+    
      path(
         "me/", 
         CurrentEmployeeAPIView.as_view()

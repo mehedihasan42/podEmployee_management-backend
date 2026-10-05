@@ -5,6 +5,10 @@ from django.db import models
 
 
 class Employee(models.Model):
+    USER_ROLE =[
+        ('User','User'),
+        ('Admin','Admin')
+    ]
     employee_id = models.CharField(
         max_length=50,
         unique=True,
@@ -15,7 +19,7 @@ class Employee(models.Model):
     profile_pic = models.URLField(blank=True,null=True)
     address = models.CharField(max_length=200,blank=True,null=True)
     password = models.CharField(max_length=200,blank=True,null=True)
-    role = models.CharField(max_length=100,blank=True,null=True)
+    role = models.CharField(choices=USER_ROLE,default='User',max_length=100,blank=True,null=True)
     is_active = models.BooleanField(default=True)
 
     email = models.EmailField(
@@ -46,6 +50,14 @@ class Employee(models.Model):
 
     def __str__(self):
         return f"{self.employee_id} - {self.name}"
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
 
 
 class Attendance(models.Model):

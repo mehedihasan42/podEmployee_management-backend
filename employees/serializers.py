@@ -34,6 +34,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "address",
             "email",
             "phone",
+            "role",
             "machine_user_id",
             "join_date",
             "created_at",
@@ -61,6 +62,23 @@ class EmployeeSerializer(serializers.ModelSerializer):
         )
 
         return Employee.objects.create(**validated_data)
+
+
+    def update(self, instance, validated_data):
+
+        validated_data.pop("confirmPassword", None)
+
+        password = validated_data.pop("password", None)
+
+        if password:
+            instance.password = make_password(password)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+
+        return instance
 
 class AttendanceSerializer(serializers.ModelSerializer):
 

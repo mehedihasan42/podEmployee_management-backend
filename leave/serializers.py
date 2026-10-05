@@ -23,6 +23,7 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             "substitute_id",
             "address_during_leave",
             "status",
+            "substitute_choice",
             "created_at",
             "updated_at",
         ]

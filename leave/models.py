@@ -16,6 +16,11 @@ class LeaveRequest(models.Model):
         ("Rejected", "Rejected"),
     ]
 
+    SUBSTITUTE_CHOICES = [
+        ("Accept","Accept"),
+        ("Reject","Reject")
+    ]
+
     name = models.CharField(max_length=50)
     employee_id = models.CharField(max_length=50)
     designation = models.CharField(max_length=255)
@@ -42,6 +47,13 @@ class LeaveRequest(models.Model):
             blank=True,
             null=True
         )
+
+    substitute_choice = models.CharField(
+        max_length=20,
+        choices=SUBSTITUTE_CHOICES,
+        null=True,
+        blank=True
+    )
 
     address_during_leave = models.TextField(
         blank=True,
