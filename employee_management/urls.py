@@ -23,6 +23,10 @@ urlpatterns = [
         include("employees.urls")
     ),
     path(
+        "task/",
+        include("task.urls")
+    ),
+    path(
         "leave/",
         include("leave.urls")
     )
